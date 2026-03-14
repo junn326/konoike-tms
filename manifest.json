@@ -1,6 +1,6 @@
 {
-  "name": "ค่าเที่ยว TR",
-  "short_name": "ค่าเที่ยว TR",
+  "name": "บันทึกงานขนส่ง",
+  "short_name": "บันทึกงานTR",
   "description": "KONOIKE COOL LOGISTIC TMS",
   "start_url": "/konoike-tms/",
   "scope": "/konoike-tms/",
