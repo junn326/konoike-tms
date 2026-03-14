@@ -2,18 +2,72 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ระบบบันทึกงานขนส่ง</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1a56db">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="ค่าเที่ยว TR">
-  <meta name="theme-color" content="#1a73e8">
-  <title>บันทึกงาน TR</title>
-  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-title" content="Driver TMS">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; overflow: hidden; background: #1a73e8; }
-    iframe {
+
+    body {
+      background: #1a56db;
+      height: 100vh;
+      height: 100dvh; /* dynamic viewport height — รองรับ mobile browser bar */
+      overflow: hidden;
+      font-family: 'Sarabun', sans-serif;
+    }
+
+    /* ── Splash screen ── */
+    #splash {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(160deg, #1a56db, #0e3fa5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: opacity .4s ease;
+    }
+    #splash.hidden { opacity: 0; pointer-events: none; }
+
+    .splash-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      animation: bounce .8s ease infinite alternate;
+    }
+    @keyframes bounce { to { transform: translateY(-8px); } }
+
+    .splash-title {
+      color: white;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: .5px;
+    }
+    .splash-sub {
+      color: rgba(255,255,255,.6);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .splash-loader {
+      margin-top: 40px;
+      width: 40px; height: 40px;
+      border: 3px solid rgba(255,255,255,.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── iframe shell ── */
+    #app-frame {
       width: 100%;
       height: 100%;
       border: none;
@@ -22,14 +76,39 @@
   </style>
 </head>
 <body>
+
+  <!-- Splash -->
+  <div id="splash">
+    <div class="splash-icon">🚛</div>
+    <div class="splash-title">ระบบบันทึกงานขนส่ง</div>
+    <div class="splash-sub">Driver / Helper v2026</div>
+    <div class="splash-loader"></div>
+  </div>
+
+  <!-- GAS App Frame -->
   <iframe
-    src="https://script.google.com/macros/s/AKfycbyB6oZsTVsy0tjWpBt6u4UYlEd5i_l4Q6Vr2CW1wKLXmf4Qq7FE4w8xToOhhham3Lpk/exec"
-    allowfullscreen>
-  </iframe>
+    id="app-frame"
+    src="https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec"
+    allow="camera; microphone"
+    loading="eager"
+  ></iframe>
+
   <script>
+    // ── Register Service Worker ──
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
     }
+
+    // ── ซ่อน splash เมื่อ iframe โหลดเสร็จ ──
+    const frame  = document.getElementById('app-frame');
+    const splash = document.getElementById('splash');
+
+    frame.addEventListener('load', () => {
+      setTimeout(() => splash.classList.add('hidden'), 300);
+    });
+
+    // fallback: ซ่อน splash หลัง 8 วินาที ถ้า load event ไม่ยิง
+    setTimeout(() => splash.classList.add('hidden'), 8000);
   </script>
 </body>
 </html>
