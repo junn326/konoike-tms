@@ -1,29 +1,207 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+  <!-- =========================
+  1) META / PWA
+  ========================== -->
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ค่าเที่ยว TR">
   <meta name="theme-color" content="#1a73e8">
   <title>ค่าเที่ยว TR</title>
+
   <link rel="manifest" href="manifest.json">
+
+  <!-- =========================
+  2) STYLE
+  ========================== -->
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; overflow: hidden; background: #1a73e8; }
-    iframe { width: 100%; height: 100%; border: none; display: block; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #1a73e8;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      position: relative;
+    }
+
+    #appFrame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      background: #ffffff;
+    }
+
+    .splash {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      background: linear-gradient(135deg, #1a73e8, #0d47a1);
+      color: #fff;
+      transition: opacity 0.35s ease, visibility 0.35s ease;
+    }
+
+    .splash.hide {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .logo {
+      width: 84px;
+      height: 84px;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      margin-bottom: 14px;
+      backdrop-filter: blur(6px);
+    }
+
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-bottom: 18px;
+    }
+
+    .loader {
+      width: 42px;
+      height: 42px;
+      border: 4px solid rgba(255,255,255,0.25);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+
+    .retry-box {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: 20px;
+      z-index: 10000;
+      background: rgba(0,0,0,0.78);
+      color: #fff;
+      padding: 14px 16px;
+      border-radius: 14px;
+      display: none;
+    }
+
+    .retry-box.show {
+      display: block;
+    }
+
+    .retry-box button {
+      margin-top: 10px;
+      width: 100%;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      background: #1a73e8;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
+  <!-- =========================
+  3) SPLASH SCREEN
+  ========================== -->
+  <div class="splash" id="splash">
+    <div class="logo">🚛</div>
+    <div class="title">ค่าเที่ยว TR</div>
+    <div class="subtitle">กำลังเปิดระบบ...</div>
+    <div class="loader"></div>
+  </div>
+
+  <!-- =========================
+  4) IFRAME APP
+  ========================== -->
   <iframe
+    id="appFrame"
     src="https://script.google.com/macros/s/AKfycbyB6oZsTVsy0tjWpBt6u4UYlEd5i_l4Q6Vr2CW1wKLXmf4Qq7FE4w8xToOhhham3Lpk/exec"
-    allowfullscreen>
+    allowfullscreen
+    referrerpolicy="no-referrer">
   </iframe>
+
+  <!-- =========================
+  5) ERROR / RETRY
+  ========================== -->
+  <div class="retry-box" id="retryBox">
+    <div>โหลดระบบไม่สำเร็จ หรือเครือข่ายช้า</div>
+    <button onclick="reloadApp()">ลองใหม่</button>
+  </div>
+
+  <!-- =========================
+  6) SCRIPT
+  ========================== -->
   <script>
+    const frame = document.getElementById('appFrame');
+    const splash = document.getElementById('splash');
+    const retryBox = document.getElementById('retryBox');
+
+    let frameLoaded = false;
+
+    function hideSplash() {
+      splash.classList.add('hide');
+    }
+
+    function reloadApp() {
+      retryBox.classList.remove('show');
+      splash.classList.remove('hide');
+      frameLoaded = false;
+      frame.src = frame.src;
+      startTimeoutCheck();
+    }
+
+    function startTimeoutCheck() {
+      setTimeout(() => {
+        if (!frameLoaded) {
+          retryBox.classList.add('show');
+        }
+      }, 12000);
+    }
+
+    frame.addEventListener('load', () => {
+      frameLoaded = true;
+      hideSplash();
+      retryBox.classList.remove('show');
+    });
+
+    startTimeoutCheck();
+
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => {
+          console.error('SW register failed:', err);
+        });
+      });
     }
   </script>
 </body>
