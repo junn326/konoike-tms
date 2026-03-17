@@ -203,6 +203,14 @@
         });
       });
     }
+    // รับ navigation request จาก GAS iframe
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'gas-navigate') {
+        frameLoaded = false;
+        frame.src = e.data.url;
+        startTimeoutCheck();
+      }
+    });
   </script>
 </body>
 </html>
