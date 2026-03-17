@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tr-pwa-v1';
+const CACHE_NAME = 'tr-pwa-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -28,10 +28,17 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // cache เฉพาะไฟล์ shell ฝั่ง GitHub
-  if (url.origin === location.origin) {
-    event.respondWith(
-      caches.match(event.request).then(res => res || fetch(event.request))
-    );
-  }
+  if (url.origin !== location.origin) return;
+
+  event.respondWith(
+    fetch(event.request)
+      .then(response => {
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseClone);
+        });
+        return response;
+      })
+      .catch(() => caches.match(event.request))
+  );
 });
