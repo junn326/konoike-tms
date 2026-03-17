@@ -9,116 +9,30 @@
   <meta name="apple-mobile-web-app-title" content="ค่าเที่ยว TR">
   <meta name="theme-color" content="#1a73e8">
   <title>ค่าเที่ยว TR</title>
-
   <link rel="manifest" href="manifest.json">
-
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #1a73e8;
-      font-family: Arial, sans-serif;
-    }
-
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #1a73e8; font-family: Arial, sans-serif; }
     body { position: relative; }
-
-    #appFrame {
-      width: 100%;
-      height: 100%;
-      border: none;
-      display: block;
-      background: #ffffff;
-    }
-
+    #appFrame { width: 100%; height: 100%; border: none; display: block; background: #ffffff; }
     .splash {
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      background: linear-gradient(135deg, #1a73e8, #0d47a1);
-      color: #fff;
+      position: fixed; inset: 0; z-index: 9999;
+      display: flex; align-items: center; justify-content: center; flex-direction: column;
+      background: linear-gradient(135deg, #1a73e8, #0d47a1); color: #fff;
       transition: opacity 0.35s ease, visibility 0.35s ease;
     }
-
-    .splash.hide {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
-
-    .logo {
-      width: 84px;
-      height: 84px;
-      border-radius: 22px;
-      background: rgba(255,255,255,0.15);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 38px;
-      margin-bottom: 14px;
-      backdrop-filter: blur(6px);
-    }
-
-    .title {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    .subtitle {
-      font-size: 14px;
-      opacity: 0.9;
-      margin-bottom: 18px;
-    }
-
-    .loader {
-      width: 42px;
-      height: 42px;
-      border: 4px solid rgba(255,255,255,0.25);
-      border-top-color: #ffffff;
-      border-radius: 50%;
-      animation: spin 0.9s linear infinite;
-    }
-
-    .retry-box {
-      position: fixed;
-      left: 16px;
-      right: 16px;
-      bottom: 20px;
-      z-index: 10000;
-      background: rgba(0,0,0,0.78);
-      color: #fff;
-      padding: 14px 16px;
-      border-radius: 14px;
-      display: none;
-    }
-
+    .splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+    .logo { width: 84px; height: 84px; border-radius: 22px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 38px; margin-bottom: 14px; backdrop-filter: blur(6px); }
+    .title { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+    .subtitle { font-size: 14px; opacity: 0.9; margin-bottom: 18px; }
+    .loader { width: 42px; height: 42px; border: 4px solid rgba(255,255,255,0.25); border-top-color: #ffffff; border-radius: 50%; animation: spin 0.9s linear infinite; }
+    .retry-box { position: fixed; left: 16px; right: 16px; bottom: 20px; z-index: 10000; background: rgba(0,0,0,0.78); color: #fff; padding: 14px 16px; border-radius: 14px; display: none; }
     .retry-box.show { display: block; }
-
-    .retry-box button {
-      margin-top: 10px;
-      width: 100%;
-      border: none;
-      border-radius: 10px;
-      padding: 12px;
-      font-size: 15px;
-      font-weight: 700;
-      background: #1a73e8;
-      color: #fff;
-      cursor: pointer;
-    }
-
+    .retry-box button { margin-top: 10px; width: 100%; border: none; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 700; background: #1a73e8; color: #fff; cursor: pointer; }
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
-
   <div class="splash" id="splash">
     <div class="logo">🚛</div>
     <div class="title">ค่าเที่ยว TR</div>
@@ -139,29 +53,30 @@
   </div>
 
   <script>
+    const GAS_BASE = 'https://script.google.com/macros/s/AKfycbyB6oZsTVsy0tjWpBt6u4UYlEd5i_l4Q6Vr2CW1wKLXmf4Qq7FE4w8xToOhhham3Lpk/exec';
     const frame    = document.getElementById('appFrame');
     const splash   = document.getElementById('splash');
     const retryBox = document.getElementById('retryBox');
-
     let frameLoaded = false;
 
-    function hideSplash() {
-      splash.classList.add('hide');
+    function showSplash() { splash.classList.remove('hide'); }
+    function hideSplash() { splash.classList.add('hide'); }
+
+    function loadUrl(url) {
+      frameLoaded = false;
+      showSplash();
+      frame.src = url;
+      startTimeoutCheck();
     }
 
     function reloadApp() {
       retryBox.classList.remove('show');
-      splash.classList.remove('hide');
-      frameLoaded = false;
-      frame.src = frame.src;
-      startTimeoutCheck();
+      loadUrl(frame.src);
     }
 
     function startTimeoutCheck() {
       setTimeout(function() {
-        if (!frameLoaded) {
-          retryBox.classList.add('show');
-        }
+        if (!frameLoaded) retryBox.classList.add('show');
       }, 12000);
     }
 
@@ -171,15 +86,26 @@
       retryBox.classList.remove('show');
     });
 
-    // ✅ รับ navigation request จาก GAS iframe
+    // ✅ รับ navigation จาก GAS (window.top.postMessage)
     window.addEventListener('message', function(e) {
-      if (e.data && e.data.type === 'gas-navigate') {
-        frameLoaded = false;
-        splash.classList.remove('hide');
-        frame.src = e.data.url;
-        startTimeoutCheck();
+      if (!e.data || e.data.type !== 'gas-navigate') return;
+      const url = e.data.url;
+      // บันทึก history สำหรับปุ่ม Back
+      history.pushState({ gasUrl: url }, '', location.href);
+      loadUrl(url);
+    });
+
+    // ✅ ปุ่ม Back ของ browser/มือถือ
+    window.addEventListener('popstate', function(e) {
+      if (e.state && e.state.gasUrl) {
+        loadUrl(e.state.gasUrl);
+      } else {
+        loadUrl(GAS_BASE);
       }
     });
+
+    // push state เริ่มต้น
+    history.replaceState({ gasUrl: GAS_BASE }, '', location.href);
 
     startTimeoutCheck();
 
