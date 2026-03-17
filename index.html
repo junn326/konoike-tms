@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <!-- =========================
-  1) META / PWA
-  ========================== -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
@@ -15,9 +12,6 @@
 
   <link rel="manifest" href="manifest.json">
 
-  <!-- =========================
-  2) STYLE
-  ========================== -->
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -29,9 +23,7 @@
       font-family: Arial, sans-serif;
     }
 
-    body {
-      position: relative;
-    }
+    body { position: relative; }
 
     #appFrame {
       width: 100%;
@@ -107,9 +99,7 @@
       display: none;
     }
 
-    .retry-box.show {
-      display: block;
-    }
+    .retry-box.show { display: block; }
 
     .retry-box button {
       margin-top: 10px;
@@ -124,15 +114,11 @@
       cursor: pointer;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
-  <!-- =========================
-  3) SPLASH SCREEN
-  ========================== -->
+
   <div class="splash" id="splash">
     <div class="logo">🚛</div>
     <div class="title">ค่าเที่ยว TR</div>
@@ -140,9 +126,6 @@
     <div class="loader"></div>
   </div>
 
-  <!-- =========================
-  4) IFRAME APP
-  ========================== -->
   <iframe
     id="appFrame"
     src="https://script.google.com/macros/s/AKfycbyB6oZsTVsy0tjWpBt6u4UYlEd5i_l4Q6Vr2CW1wKLXmf4Qq7FE4w8xToOhhham3Lpk/exec"
@@ -150,20 +133,14 @@
     referrerpolicy="no-referrer">
   </iframe>
 
-  <!-- =========================
-  5) ERROR / RETRY
-  ========================== -->
   <div class="retry-box" id="retryBox">
     <div>โหลดระบบไม่สำเร็จ หรือเครือข่ายช้า</div>
     <button onclick="reloadApp()">ลองใหม่</button>
   </div>
 
-  <!-- =========================
-  6) SCRIPT
-  ========================== -->
   <script>
-    const frame = document.getElementById('appFrame');
-    const splash = document.getElementById('splash');
+    const frame    = document.getElementById('appFrame');
+    const splash   = document.getElementById('splash');
     const retryBox = document.getElementById('retryBox');
 
     let frameLoaded = false;
@@ -181,36 +158,38 @@
     }
 
     function startTimeoutCheck() {
-      setTimeout(() => {
+      setTimeout(function() {
         if (!frameLoaded) {
           retryBox.classList.add('show');
         }
       }, 12000);
     }
 
-    frame.addEventListener('load', () => {
+    frame.addEventListener('load', function() {
       frameLoaded = true;
       hideSplash();
       retryBox.classList.remove('show');
     });
 
-    startTimeoutCheck();
-
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(err => {
-          console.error('SW register failed:', err);
-        });
-      });
-    }
-    // รับ navigation request จาก GAS iframe
+    // ✅ รับ navigation request จาก GAS iframe
     window.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'gas-navigate') {
         frameLoaded = false;
+        splash.classList.remove('hide');
         frame.src = e.data.url;
         startTimeoutCheck();
       }
     });
+
+    startTimeoutCheck();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('./sw.js').catch(function(err) {
+          console.error('SW register failed:', err);
+        });
+      });
+    }
   </script>
 </body>
 </html>
