@@ -1,8 +1,10 @@
-const CACHE_NAME = 'tr-pwa-v2';
+const CACHE_NAME = 'tr-pwa-v3';
 const ASSETS = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 self.addEventListener('install', event => {
@@ -26,17 +28,25 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // กรองเฉพาะ GET — POST/PUT/DELETE ไม่ cache (cache.put รองรับแค่ GET)
+  if (event.request.method !== 'GET') return;
+
   const url = new URL(event.request.url);
 
+  // ข้าม cross-origin (เช่น iframe เข้า script.google.com)
   if (url.origin !== location.origin) return;
 
+  // Network-first → fallback cache
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseClone);
-        });
+        // เก็บเฉพาะ response สมบูรณ์ (status 200, basic)
+        if (response && response.status === 200 && response.type === 'basic') {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, clone).catch(() => {});
+          });
+        }
         return response;
       })
       .catch(() => caches.match(event.request))
