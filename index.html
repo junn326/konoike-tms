@@ -1,121 +1,292 @@
 <!DOCTYPE html>
-<html lang="th">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="ค่าเที่ยว TR">
-  <meta name="theme-color" content="#1a73e8">
-  <title>ค่าเที่ยว TR</title>
-  <link rel="manifest" href="manifest.json">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #1a73e8; font-family: Arial, sans-serif; }
-    body { position: relative; }
-    #appFrame { width: 100%; height: 100%; border: none; display: block; background: #ffffff; }
-    .splash {
-      position: fixed; inset: 0; z-index: 9999;
-      display: flex; align-items: center; justify-content: center; flex-direction: column;
-      background: linear-gradient(135deg, #1a73e8, #0d47a1); color: #fff;
-      transition: opacity 0.35s ease, visibility 0.35s ease;
+  <base target="_top">
+  <!-- ── PWA Bridge: ส่ง navigation ผ่าน postMessage ถ้าอยู่ใน iframe (no-op ถ้าเปิด GAS URL ตรงๆ) ── -->
+  <script>
+  (function(){
+    if (window.parent === window) return;
+    function gasNav(url) {
+      try { window.parent.postMessage({ type:'gas-navigate', url:url }, '*'); }
+      catch(e) { window.location.replace(url); }
     }
-    .splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
-    .logo { width: 84px; height: 84px; border-radius: 22px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 38px; margin-bottom: 14px; backdrop-filter: blur(6px); }
-    .title { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
-    .subtitle { font-size: 14px; opacity: 0.9; margin-bottom: 18px; }
-    .loader { width: 42px; height: 42px; border: 4px solid rgba(255,255,255,0.25); border-top-color: #ffffff; border-radius: 50%; animation: spin 0.9s linear infinite; }
-    .retry-box { position: fixed; left: 16px; right: 16px; bottom: 20px; z-index: 10000; background: rgba(0,0,0,0.78); color: #fff; padding: 14px 16px; border-radius: 14px; display: none; }
-    .retry-box.show { display: block; }
-    .retry-box button { margin-top: 10px; width: 100%; border: none; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 700; background: #1a73e8; color: #fff; cursor: pointer; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    document.addEventListener('click', function(e){
+      var a = e.target.closest && e.target.closest('a[href]');
+      if (!a) return;
+      var href = a.getAttribute('href');
+      if (!href || href.charAt(0)==='#' || href.indexOf('javascript:')===0) return;
+      if (href.indexOf('/macros/s/')===-1 && href.indexOf('?page=')!==0) return;
+      e.preventDefault();
+      gasNav(new URL(href, location.href).href);
+    }, true);
+    try {
+      var orig = window.location.replace.bind(window.location);
+      Object.defineProperty(window.location, 'replace', {
+        value: function(url){
+          if (typeof url==='string' && url.indexOf('/macros/s/')!==-1) { gasNav(url); return; }
+          return orig(url);
+        },
+        writable: true, configurable: true
+      });
+    } catch(_) {}
+    window.gasNavigate = gasNav;
+    function sendReady() {
+      try { window.parent.postMessage({ type:'gas-ready' }, '*'); } catch(_) {}
+    }
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      setTimeout(sendReady, 50);
+    } else {
+      document.addEventListener('DOMContentLoaded', sendReady);
+    }
+  })();
+  </script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body { background:#f4f7f9; font-family:'Sarabun',sans-serif; }
+    .btn-custom {
+      height:80px; font-size:1.15rem; border-radius:15px; font-weight:bold;
+      border:none; box-shadow:0 4px 10px rgba(0,0,0,0.1); transition:all 0.2s ease;
+      display:flex; align-items:center; justify-content:center; text-decoration:none!important;
+    }
+    .btn-custom:active { transform:scale(0.96); box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+    .user-profile {
+      background:white; padding:18px; border-radius:18px; margin-bottom:16px;
+      border-left:6px solid #007bff; box-shadow:0 4px 12px rgba(0,0,0,0.05);
+    }
+    .user-icon {
+      width:52px; height:52px; border-radius:14px;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:bold; font-size:1.4rem; color:white;
+    }
+    .driver-icon { background:linear-gradient(135deg,#007bff,#0056b3); }
+    .helper-icon { background:linear-gradient(135deg,#28a745,#1a6e30); }
+    .admin-icon  { background:linear-gradient(135deg,#9c1a5e,#6a0040); }
+    .role-badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.75rem; font-weight:bold; }
+    .logout-link { color:#dc3545; text-decoration:none; font-size:0.9rem; font-weight:bold; cursor:pointer; }
+    .logout-link:hover { text-decoration:underline; }
+    .section-label {
+      font-size:0.78rem; color:#888; font-weight:bold;
+      letter-spacing:1px; text-transform:uppercase; margin:16px 0 8px;
+    }
+    .app-title { color:#2c3e50; letter-spacing:1px; }
+
+    /* Task Tracker */
+    .task-card {
+      background:white; border-radius:14px; padding:12px 16px;
+      margin-bottom:8px; box-shadow:0 2px 8px rgba(0,0,0,0.07);
+      border-left:4px solid #fd7e14;
+    }
+    .task-card.all-done { border-left-color:#28a745; opacity:0.6; }
+    .task-do   { font-weight:bold; font-size:0.95rem; color:#2c3e50; }
+    .task-meta { font-size:0.78rem; color:#888; margin-top:2px; }
+    .task-steps { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+    .step { font-size:0.78rem; padding:3px 10px; border-radius:20px; font-weight:bold; }
+    .step.done { background:#d4edda; color:#155724; }
+    .step.todo { background:#f8d7da; color:#721c24; }
+    .tracker-empty { text-align:center; color:#aaa; font-size:0.85rem; padding:12px 0; }
+    .tracker-error { text-align:center; color:#dc3545; font-size:0.85rem; padding:14px; background:#fff5f5; border-radius:12px; border:1px dashed #f5c2c7; }
+    .tracker-error .retry-btn { display:inline-block; margin-top:6px; padding:4px 14px; background:#dc3545; color:#fff; border:none; border-radius:8px; font-weight:bold; font-size:0.8rem; cursor:pointer; }
+    .tracker-error .retry-btn:hover { background:#bb2d3b; }
   </style>
 </head>
 <body>
-  <div class="splash" id="splash">
-    <div class="logo">🚛</div>
-    <div class="title">ค่าเที่ยว TR</div>
-    <div class="subtitle">กำลังเปิดระบบ...</div>
-    <div class="loader"></div>
+<div class="container py-4">
+
+  <!-- HEADER -->
+  <div class="text-center mb-4">
+    <h2 class="fw-bold app-title">
+      ระบบบันทึกงานขนส่ง <span class="text-primary">Driver/Helper</span>
+    </h2>
+    <p class="text-muted small">ระบบบันทึกงานพนักงานขับรถ v2026</p>
   </div>
 
-  <iframe
-    id="appFrame"
-    src="https://script.google.com/macros/s/AKfycbyB6oZsTVsy0tjWpBt6u4UYlEd5i_l4Q6Vr2CW1wKLXmf4Qq7FE4w8xToOhhham3Lpk/exec"
-    allowfullscreen
-    referrerpolicy="no-referrer">
-  </iframe>
-
-  <div class="retry-box" id="retryBox">
-    <div>โหลดระบบไม่สำเร็จ หรือเครือข่ายช้า</div>
-    <button onclick="reloadApp()">ลองใหม่</button>
+  <!-- USER PROFILE -->
+  <div class="user-profile d-flex align-items-center">
+    <div class="user-icon me-3 <?= role === 'DRIVER' ? 'driver-icon' : (role === 'ADMIN' ? 'admin-icon' : 'helper-icon') ?>">
+      <?= fullName.charAt(0).toUpperCase() ?>
+    </div>
+    <div class="flex-grow-1">
+      <div class="text-muted" style="font-size:0.75rem;">พนักงานปัจจุบัน:</div>
+      <div class="fw-bold text-dark" style="font-size:1.05rem;"><?= fullName ?></div>
+      <div class="d-flex gap-2 align-items-center mt-1">
+        <span class="badge bg-light text-primary border border-primary-subtle fw-normal">ID: <?= userCode ?></span>
+        <? if (role === 'DRIVER') { ?>
+          <span class="role-badge" style="background:#ddeeff;color:#007bff;">🚛 พขร.</span>
+        <? } else if (role === 'HELPER') { ?>
+          <span class="role-badge" style="background:#ddffea;color:#28a745;">📦 เด็กรถ</span>
+        <? } else { ?>
+          <span class="role-badge" style="background:#ffe0f0;color:#9c1a5e;">👑 Admin</span>
+        <? } ?>
+      </div>
+    </div>
+    <div class="text-end">
+      <a href="javascript:void(0)" onclick="doLogout()" class="logout-link">ออกจากระบบ</a>
+    </div>
   </div>
 
-  <script>
-    const GAS_BASE = 'https://script.google.com/macros/s/AKfycbyB6oZsTVsy0tjWpBt6u4UYlEd5i_l4Q6Vr2CW1wKLXmf4Qq7FE4w8xToOhhham3Lpk/exec';
-    const frame    = document.getElementById('appFrame');
-    const splash   = document.getElementById('splash');
-    const retryBox = document.getElementById('retryBox');
-    let frameLoaded = false;
+  <!-- TASK TRACKER -->
+  <div class="section-label">📋 สถานะงาน 7 วันล่าสุด</div>
+  <div id="taskTracker">
+    <div class="tracker-empty">⏳ กำลังโหลด...</div>
+  </div>
 
-    function showSplash() { splash.classList.remove('hide'); }
-    function hideSplash() { splash.classList.add('hide'); }
+<!-- MENU -->
+<div class="section-label">เมนูหลัก</div>
+<div class="row g-3">
 
-    function loadUrl(url) {
-      frameLoaded = false;
-      showSplash();
-      frame.src = url;
-      startTimeoutCheck();
-    }
+  <? if (role === 'DRIVER') { ?>
+    <div class="col-12">
+      <a href="<?= getScriptUrl() ?>?page=check&token=<?= token ?>" class="btn btn-warning btn-custom w-100 text-dark">
+        🚛 เช็ครถก่อนโหลด
+      </a>
+    </div>
+  <? } ?>
 
-    function reloadApp() {
-      retryBox.classList.remove('show');
-      loadUrl(frame.src);
-    }
+  <? if (role === 'DRIVER' || role === 'HELPER') { ?>
+    <div class="col-12">
+      <a href="<?= getScriptUrl() ?>?page=job&token=<?= token ?>" class="btn btn-primary btn-custom w-100">
+        📝 บันทึกงาน (DO)
+      </a>
+    </div>
+  <? } ?>
 
-    function startTimeoutCheck() {
-      setTimeout(function() {
-        if (!frameLoaded) retryBox.classList.add('show');
-      }, 12000);
-    }
+  <? if (role === 'DRIVER') { ?>
+    <div class="col-12">
+      <a href="<?= getScriptUrl() ?>?page=wash&token=<?= token ?>" class="btn btn-info btn-custom w-100 text-white">
+        🧼 ล้างรถ
+      </a>
+    </div>
+  <? } ?>
 
-    frame.addEventListener('load', function() {
-      frameLoaded = true;
-      hideSplash();
-      retryBox.classList.remove('show');
-    });
+  <? if (role === 'DRIVER' || role === 'HELPER') { ?>
+    <div class="col-12">
+      <a href="<?= getScriptUrl() ?>?page=logs&token=<?= token ?>" class="btn btn-secondary btn-custom w-100">
+        📊 ดูบันทึก & ยอดเงิน
+      </a>
+    </div>
+  <? } ?>
 
-    // ✅ รับ navigation จาก GAS (window.top.postMessage)
-    window.addEventListener('message', function(e) {
-      if (!e.data || e.data.type !== 'gas-navigate') return;
-      const url = e.data.url;
-      // บันทึก history สำหรับปุ่ม Back
-      history.pushState({ gasUrl: url }, '', location.href);
-      loadUrl(url);
-    });
+  <? if (role === 'ADMIN') { ?>
+    <div class="col-12">
+      <a href="<?= getScriptUrl() ?>?page=report&token=<?= token ?>"
+         class="btn btn-custom w-100 text-white"
+         style="background:linear-gradient(135deg,#6f42c1,#4a1fa8);">
+        📄 ออกรายงาน / Export
+      </a>
+    </div>
+    <div class="col-12">
+      <a href="<?= getScriptUrl() ?>?page=photoreport&token=<?= token ?>"
+         class="btn btn-custom w-100 text-white"
+         style="background:linear-gradient(135deg,#fd7e14,#dc3545);">
+        📸 รายงานรูปดูแล / ล้างรถ
+      </a>
+    </div>
+  <? } ?>
 
-    // ✅ ปุ่ม Back ของ browser/มือถือ
-    window.addEventListener('popstate', function(e) {
-      if (e.state && e.state.gasUrl) {
-        loadUrl(e.state.gasUrl);
-      } else {
-        loadUrl(GAS_BASE);
-      }
-    });
+</div>
+  <!-- FOOTER -->
+  <div class="text-center mt-5">
+    <p class="text-muted" style="font-size:0.7rem;">© 2026 ระบบบันทึกงานขนส่ง By'Narong</p>
+  </div>
 
-    // push state เริ่มต้น
-    history.replaceState({ gasUrl: GAS_BASE }, '', location.href);
+</div>
+<script>
+  const TOKEN     = "<?= token ?>";
+  const USER_CODE = "<?= userCode ?>";
+  const LOGIN_URL = "<?= getScriptUrl() ?>?page=login";
+  const BASE_URL  = "<?= getScriptUrl() ?>";
 
-    startTimeoutCheck();
+  // ── TASK TRACKER ──
+  function loadTasks() {
+    const box = document.getElementById('taskTracker');
+    box.innerHTML = '<div class="tracker-empty">⏳ กำลังโหลด...</div>';
 
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./sw.js').catch(function(err) {
-          console.error('SW register failed:', err);
-        });
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (!res || !res.tasks || !res.tasks.length) {
+          box.innerHTML = '<div class="tracker-empty">✅ ไม่มีงานค้างดำเนินการ</div>';
+          return;
+        }
+        box.innerHTML = res.tasks.map(function(t) {
+          const jobUrl  = BASE_URL + '?page=job&token='  + TOKEN + '&prefill_do=' + encodeURIComponent(t.doNo) + '&prefill_date=' + encodeURIComponent(t.date);
+          const washUrl = BASE_URL + '?page=wash&token=' + TOKEN + '&prefill_do=' + encodeURIComponent(t.doNo) + '&prefill_date=' + encodeURIComponent(t.date);
+          return '<div class="task-card">' +
+            '<div class="task-do">DO: ' + t.doNo + '</div>' +
+            '<div class="task-meta">📅 ' + t.date + ' &nbsp;|&nbsp; 🚛 ' + (t.plate||'-') + ' ' + (t.vtype||'') + '</div>' +
+            '<div class="task-steps">' +
+              '<span class="step done">🚛 เช็ครถ ✅</span>' +
+              (t.hasJob
+                ? '<span class="step done">📝 บันทึกงาน ✅</span>'
+                : '<a href="' + jobUrl + '" class="step todo" style="text-decoration:none;">📝 บันทึกงาน ❌ กดเพื่อบันทึก</a>') +
+              (t.hasWash
+                ? '<span class="step done">🧼 ล้างรถ ✅</span>'
+                : '<a href="' + washUrl + '" class="step todo" style="text-decoration:none;">🧼 ล้างรถ ❌ กดเพื่อบันทึก</a>') +
+            '</div>' +
+          '</div>';
+        }).join('');
+      })
+      .withFailureHandler(function() {
+        box.innerHTML =
+          '<div class="tracker-error">' +
+            '⚠️ ไม่สามารถโหลดข้อมูลได้<br>' +
+            '<button class="retry-btn" onclick="loadTasks()">🔄 ลองอีกครั้ง</button>' +
+          '</div>';
+      })
+      .getTaskStatus(USER_CODE);
+  }
+  loadTasks();
+
+  // ── LOGOUT (SweetAlert confirm) ──
+  function doLogout() {
+    Swal.fire({
+      icon: 'question',
+      title: 'ออกจากระบบ?',
+      text: 'คุณต้องการออกจากระบบและไปหน้า login ใช่ไหม',
+      showCancelButton: true,
+      confirmButtonText: '✅ ออกจากระบบ',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      reverseButtons: true
+    }).then(function(res) {
+      if (!res.isConfirmed) return;
+
+      Swal.fire({
+        title: 'กำลังออกจากระบบ...',
+        allowOutsideClick: false,
+        didOpen: function() { Swal.showLoading(); }
       });
-    }
-  </script>
+
+      var goLogin = function() {
+        if (window.gasNavigate) window.gasNavigate(LOGIN_URL);
+        else window.top.location.replace(LOGIN_URL);
+      };
+      google.script.run
+        .withSuccessHandler(goLogin)
+        .withFailureHandler(goLogin)
+        .destroySession(TOKEN);
+    });
+  }
+
+  // ── PREVENT DOUBLE CLICK + TIMEOUT RECOVERY ──
+  document.querySelectorAll('.btn-custom').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      if (this.tagName !== 'A') return;
+      const original = this.innerHTML;
+      this.style.pointerEvents = 'none';
+      this.style.opacity = '0.8';
+      this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> กำลังโหลด...';
+      // กู้สถานะถ้า navigation ค้างเกิน 5 วินาที
+      const self = this;
+      setTimeout(function() {
+        self.style.pointerEvents = '';
+        self.style.opacity = '';
+        self.innerHTML = original;
+      }, 5000);
+    });
+  });
+</script>
 </body>
 </html>
