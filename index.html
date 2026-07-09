@@ -14,123 +14,59 @@
   <link rel="icon" href="icon-192.png">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #1a73e8; font-family: Arial, sans-serif; }
-    body { position: relative; }
-    #appFrame { width: 100%; height: 100%; border: none; display: block; background: #ffffff; }
-    .splash {
-      position: fixed; inset: 0; z-index: 9999;
+    html, body { width: 100%; min-height: 100%; background: linear-gradient(135deg, #1a73e8, #0d47a1); font-family: Arial, 'Segoe UI', sans-serif; }
+    .wrap {
+      position: fixed; inset: 0;
       display: flex; align-items: center; justify-content: center; flex-direction: column;
-      background: linear-gradient(135deg, #1a73e8, #0d47a1); color: #fff;
-      transition: opacity 0.35s ease, visibility 0.35s ease;
+      color: #fff; text-align: center; padding: 24px;
     }
-    .splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
-    .logo { width: 84px; height: 84px; border-radius: 22px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 38px; margin-bottom: 14px; backdrop-filter: blur(6px); }
-    .title { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
-    .subtitle { font-size: 14px; opacity: 0.9; margin-bottom: 18px; }
-    .loader { width: 42px; height: 42px; border: 4px solid rgba(255,255,255,0.25); border-top-color: #ffffff; border-radius: 50%; animation: spin 0.9s linear infinite; }
-    .retry-box { position: fixed; left: 16px; right: 16px; bottom: 20px; z-index: 10000; background: rgba(0,0,0,0.78); color: #fff; padding: 14px 16px; border-radius: 14px; display: none; }
-    .retry-box.show { display: block; }
-    .retry-box button { margin-top: 10px; width: 100%; border: none; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 700; background: #1a73e8; color: #fff; cursor: pointer; }
+    .logo { width: 92px; height: 92px; border-radius: 24px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 42px; margin-bottom: 18px; }
+    .title { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+    .subtitle { font-size: 15px; opacity: 0.9; margin-bottom: 22px; }
+    .loader { width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.25); border-top-color: #fff; border-radius: 50%; animation: spin 0.9s linear infinite; margin-bottom: 26px; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .open-btn {
+      display: inline-block; background: #fff; color: #0d47a1;
+      border: none; border-radius: 14px; padding: 15px 40px;
+      font-size: 17px; font-weight: 700; cursor: pointer; text-decoration: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25); transition: transform 0.15s;
+    }
+    .open-btn:active { transform: scale(0.97); }
+    .hint { font-size: 13px; opacity: 0.8; margin-top: 16px; max-width: 300px; line-height: 1.5; }
   </style>
 </head>
 <body>
-  <div class="splash" id="splash">
+  <div class="wrap">
     <div class="logo">🚛</div>
     <div class="title">ค่าเที่ยว TR</div>
-    <div class="subtitle">กำลังเปิดระบบ...</div>
-    <div class="loader"></div>
-  </div>
-
-  <iframe
-    id="appFrame"
-    src="https://script.google.com/macros/s/AKfycbyB6oZsTVsy0tjWpBt6u4UYlEd5i_l4Q6Vr2CW1wKLXmf4Qq7FE4w8xToOhhham3Lpk/exec"
-    allow="camera; microphone; clipboard-write; encrypted-media; fullscreen; geolocation"
-    allowfullscreen
-    referrerpolicy="no-referrer">
-  </iframe>
-
-  <div class="retry-box" id="retryBox">
-    <div>โหลดระบบไม่สำเร็จ หรือเครือข่ายช้า</div>
-    <button onclick="reloadApp()">ลองใหม่</button>
+    <div class="subtitle">ระบบบันทึกงานขนส่ง</div>
+    <div class="loader" id="loader"></div>
+    <a class="open-btn" id="openBtn" href="#" style="display:none;">เปิดระบบ ▶</a>
+    <div class="hint" id="hint" style="display:none;">หากไม่เปิดอัตโนมัติ กดปุ่ม "เปิดระบบ"</div>
   </div>
 
   <script>
     const GAS_BASE = 'https://script.google.com/macros/s/AKfycbyB6oZsTVsy0tjWpBt6u4UYlEd5i_l4Q6Vr2CW1wKLXmf4Qq7FE4w8xToOhhham3Lpk/exec';
-    const frame    = document.getElementById('appFrame');
-    const splash   = document.getElementById('splash');
-    const retryBox = document.getElementById('retryBox');
-    let timeoutId  = null;
 
-    function showSplash() { splash.classList.remove('hide'); }
-    function hideSplash() {
-      splash.classList.add('hide');
-      retryBox.classList.remove('show');
-      if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
-    }
+    // ตั้ง href ปุ่มสำรอง
+    document.getElementById('openBtn').href = GAS_BASE;
 
-    function startTimeoutCheck() {
-      if (timeoutId) clearTimeout(timeoutId);
-      timeoutId = setTimeout(function() {
-        retryBox.classList.add('show');
-      }, 12000);
-    }
-
-    function loadUrl(url) {
-      showSplash();
-      frame.src = url;
-      startTimeoutCheck();
-    }
-
-    function reloadApp() {
-      retryBox.classList.remove('show');
-      loadUrl(frame.src);
-    }
-
-    // ── iframe wrapper load (fallback ถ้า gas-ready ไม่ยิง) ──
-    frame.addEventListener('load', function() {
-      // ให้เวลา GAS HTML จริงโหลดอีก 1.5 วินาที แล้วซ่อน splash
-      // (gas-ready จะมาเร็วกว่านี้ถ้า bridge ส่งสำเร็จ)
-      setTimeout(function() {
-        if (!splash.classList.contains('hide')) hideSplash();
-      }, 1500);
-    });
-
-    // ── รับ message จาก GAS HTML ──
-    window.addEventListener('message', function(e) {
-      if (!e.data || typeof e.data !== 'object') return;
-
-      if (e.data.type === 'gas-navigate' && e.data.url) {
-        history.pushState({ gasUrl: e.data.url }, '', location.href);
-        loadUrl(e.data.url);
-      }
-      else if (e.data.type === 'gas-ready') {
-        // GAS HTML โหลดเสร็จจริง → ซ่อน splash ทันที
-        hideSplash();
-      }
-    });
-
-    // ── ปุ่ม Back ของ browser/มือถือ ──
-    window.addEventListener('popstate', function(e) {
-      if (e.state && e.state.gasUrl) {
-        loadUrl(e.state.gasUrl);
-      } else {
-        loadUrl(GAS_BASE);
-      }
-    });
-
-    // ── เริ่มต้น ──
-    history.replaceState({ gasUrl: GAS_BASE }, '', location.href);
-    startTimeoutCheck();
-
-    // ── Service Worker ──
+    // Service Worker (ให้ติดตั้งเป็น PWA + มี icon บนจอ)
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./sw.js').catch(function(err) {
-          console.error('SW register failed:', err);
-        });
-      });
+      navigator.serviceWorker.register('./sw.js').catch(function(e){ console.warn('SW:', e); });
     }
+
+    // เด้งเข้าระบบ GAS ตรงๆ (top-level ไม่ใช่ iframe → ไม่ติด X-Frame-Options)
+    setTimeout(function() {
+      window.location.replace(GAS_BASE);
+    }, 700);
+
+    // เผื่อ redirect ถูกบล็อก → โชว์ปุ่มสำรองหลัง 2.5 วินาที
+    setTimeout(function() {
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('openBtn').style.display = 'inline-block';
+      document.getElementById('hint').style.display = 'block';
+    }, 2500);
   </script>
 </body>
 </html>
