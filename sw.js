@@ -1,7 +1,5 @@
-const CACHE_NAME = 'tr-pwa-v3';
+const CACHE_NAME = 'tr-pwa-v4';
 const ASSETS = [
-  './',
-  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
@@ -18,9 +16,7 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
+        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
       )
     )
   );
@@ -28,24 +24,26 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // กรองเฉพาะ GET — POST/PUT/DELETE ไม่ cache (cache.put รองรับแค่ GET)
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
+  if (url.origin !== location.origin) return; // ข้าม cross-origin (script.google.com)
 
-  // ข้าม cross-origin (เช่น iframe เข้า script.google.com)
-  if (url.origin !== location.origin) return;
+  // ── หน้าเว็บ (navigate) → network เท่านั้น ห้ามเสิร์ฟ index เก่าค้าง ──
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
 
-  // Network-first → fallback cache
+  // ── ไฟล์ static (icon, manifest) → network-first, cache สำรอง ──
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // เก็บเฉพาะ response สมบูรณ์ (status 200, basic)
         if (response && response.status === 200 && response.type === 'basic') {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, clone).catch(() => {});
-          });
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone).catch(() => {}));
         }
         return response;
       })
